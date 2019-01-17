@@ -7,7 +7,7 @@ jobs:
   build:
     docker:
       # specify the version you desire here
-      - image: springframeworkguru/circleci_build
+      - image: circleci/openjdk:8-jdk
 
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
@@ -22,23 +22,38 @@ jobs:
       TERM: dumb
 
     steps:
-      - setup_remote_docker
-
       - checkout
+
+      #TODO create custom Docker image with Node and Yarn Installed
+      # Install Node for JH Build
+      - run:
+          name: Download Node
+          command: curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash
+      - run:
+          name: Install Node
+          command: sudo apt-get install -y nodejs
+      - run:
+          name: update-npm
+          command: sudo npm install -g npm@latest
+
+      # Install Yarn
+      - run:
+          name: Download Yarn
+          command: curl -sS https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add && echo "deb https://dl.yarnpkg.com/debian/ stable main" | sudo tee /etc/apt/sources.list.d/yarn.list
+      - run:
+            name: Install Yarn
+            command: sudo apt-get update && sudo apt-get install yarn
 
       # Download and cache dependencies
       - restore_cache:
           keys:
           - v1-dependencies-{{ checksum "build.gradle" }}
+          # Uncomment if your build has UI components. 
+          #- node-dependency-cache-{{ checksum "node_modules" }}
           # fallback to using the latest cache if no exact match is found
           - v1-dependencies-
 
       - run: gradle dependencies
-
-      - save_cache:
-          paths:
-            - ~/.m2
-          key: v1-dependencies-{{ checksum "build.gradle" }}
 
       # run tests and package
       - run: ./gradlew clean test
@@ -56,12 +71,19 @@ jobs:
       - store_artifacts:
           path: ~/junit
 
-      - run:
-          name: install yarn
-          command: sudo npm install -g yarn
+      - setup_remote_docker
 
       - run:
           name: Build Docker Image
-          command: ./gradlew bootRepackage -Pprod pushDockerLatest pushDockerVersionTag -x test
+          command: ./gradlew bootRepackage -Pprod buildDocker
 
+      - save_cache:
+          paths:
+            - ~/.m2
+          key: v1-dependencies-{{ checksum "build.gradle" }}
 
+     # Uncomment if your build has UI components. 
+     # - save_cache:
+     #     paths:
+     #       - ~/repo/node_modules
+     #     key: node-dependency-cache-{{ checksum "node_modules" }}
