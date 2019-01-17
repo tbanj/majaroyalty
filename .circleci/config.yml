@@ -55,9 +55,9 @@ jobs:
 
       - run: gradle dependencies
 
-     - run:
-        name: Chmod permissions #if permission for Gradlew Dependencies fail, use this. 
-        command: sudo chmod +x ./gradlew 
+    #   - run:
+    #       name: Chmod permissions #if permission for Gradlew Dependencies fail, use this. 
+    #       command: sudo chmod +x ./gradlew 
 
       # run tests and package
       - run: ./gradlew clean test
